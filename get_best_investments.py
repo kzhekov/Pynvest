@@ -1,18 +1,20 @@
 import os
+import pdb
 
 import pandas as pd
 import requests
 from dateutil.utils import today
 from yahoo_fin import stock_info as si
 
-recommendations = []
 indexes = {"sp500": si.tickers_sp500,
-           "nasdaq": si.tickers_nasdaq}
+           "nasdaq": si.tickers_nasdaq,
+           "dji": si.tickers_dow}
 for name, index in indexes.items():
     tickers = index()
+    recommendations = []
+    final_tickers = []
     if os.path.exists(f"{name}_{today().strftime('%Y%m%d')}.csv"):
         dataframe = pd.read_csv(f"{name}_{today().strftime('%Y%m%d')}.csv")
-        dataframe = dataframe.sort_values(["Recommendations", "Company"])
         print(dataframe)
     else:
         for ticker in tickers:
@@ -23,20 +25,20 @@ for name, index in indexes.items():
             url = lhs_url + ticker + rhs_url
             r = requests.get(url)
             if not r.ok:
-                recommendation = 6.0
+                recommendation = None
             try:
                 result = r.json()["quoteSummary"]["result"][0]
                 recommendation = float(result["financialData"]["recommendationMean"]["fmt"])
+                print("--------------------------------------------")
+                print("{} has an average recommendation of: ".format(ticker), recommendation)
             except:
-                recommendation = 6.0
+                recommendation = None
 
-            recommendations.append(recommendation)
+            if recommendation:
+                final_tickers.append(ticker)
+                recommendations.append(recommendation)
 
-            print("--------------------------------------------")
-            print("{} has an average recommendation of: ".format(ticker), recommendation)
-
-        dataframe = pd.DataFrame(list(zip(tickers, recommendations)), columns=["Company", "Recommendations"])
+        dataframe = pd.DataFrame(list(zip(final_tickers, recommendations)), columns=["Company", "Recommendations"])
         dataframe = dataframe.set_index("Company")
-        dataframe = dataframe.sort_values(["Recommendations", "Company"])
         dataframe.to_csv(f"{name}_{today().strftime('%Y%m%d')}.csv")
         print(dataframe)
