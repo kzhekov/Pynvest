@@ -35,7 +35,7 @@ for name, index in indexes.items():
                 price = float(result["financialData"]["currentPrice"]["fmt"])
                 price_mean_target = float(result["financialData"]["targetMeanPrice"]["fmt"])
                 price_min_target = float(result["financialData"]["targetLowPrice"]["fmt"])
-                price_mean_diff = price - price_mean_target
+                price_mean_diff = round(price - price_mean_target, 2)
                 projected_min_return = round(price_min_target/price, 2)
                 print("--------------------------------------------")
                 print("{} has an average recommendation of: ".format(ticker), recommendation)
