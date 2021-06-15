@@ -1,24 +1,28 @@
 import os
+
 import pandas as pd
 import requests
 from dateutil.utils import today
 from yahoo_fin import stock_info as si
 
-indexes = {"sp500": si.tickers_sp500,
-           "nasdaq": si.tickers_nasdaq,
-           "dji": si.tickers_dow}
-for name, index in indexes.items():
-    tickers = index()
+invested_in = {"invested": ["ADMA", "BTAI", "IMUX", "IMVT", "OPTN", "PRQR", "SIOX", "VKTX"]}
+indexes = {"nasdaq": si.tickers_nasdaq()}
+for name, index in invested_in.items():
+    tickers = index
     recommendations = []
     final_tickers = []
     prices = []
     price_mean_targets = []
     price_min_targets = []
     price_diffs = []
-    projected_returns = []
+    projected_min_returns = []
+    projected_mean_returns = []
+    n_of_analysts = []
     if os.path.exists(f"{name}_{today().strftime('%Y%m%d')}.csv"):
         dataframe = pd.read_csv(f"{name}_{today().strftime('%Y%m%d')}.csv")
+        dataframe = dataframe.round(2)
         print(dataframe)
+        dataframe.to_csv(f"{name}_{today().strftime('%Y%m%d')}.csv")
     else:
         for ticker in tickers:
             lhs_url = "https://query2.finance.yahoo.com/v10/finance/quoteSummary/"
@@ -36,16 +40,20 @@ for name, index in indexes.items():
                 price_mean_target = float(result["financialData"]["targetMeanPrice"]["fmt"])
                 price_min_target = float(result["financialData"]["targetLowPrice"]["fmt"])
                 price_mean_diff = round(price - price_mean_target, 2)
-                projected_min_return = round(price_min_target/price, 2)
+                projected_mean_return = round(price_mean_target / price, 2)
+                projected_min_return = round(price_min_target / price, 2)
+                n_analysts = result["financialData"]["numberOfAnalystOpinions"]["raw"]
                 print("--------------------------------------------")
-                print("{} has an average recommendation of: ".format(ticker), recommendation)
+                print(f"{ticker} has an average recommendation of: {recommendation} by {n_analysts} analysts")
             except:
                 recommendation = None
                 price = None
                 price_mean_target = None
                 price_min_target = None
                 price_mean_diff = None
+                projected_mean_return = None
                 projected_min_return = None
+                n_analysts = None
 
             if recommendation:
                 final_tickers.append(ticker)
@@ -54,7 +62,9 @@ for name, index in indexes.items():
                 price_mean_targets.append(price_mean_target)
                 price_min_targets.append(price_min_target)
                 price_diffs.append(price_mean_diff)
-                projected_returns.append(projected_min_return)
+                projected_mean_returns.append(projected_mean_return)
+                projected_min_returns.append(projected_min_return)
+                n_of_analysts.append(n_analysts)
 
         dataframe = pd.DataFrame(list(zip(final_tickers,
                                           recommendations,
@@ -62,14 +72,18 @@ for name, index in indexes.items():
                                           price_mean_targets,
                                           price_min_targets,
                                           price_diffs,
-                                          projected_returns)),
+                                          projected_min_returns,
+                                          projected_mean_returns,
+                                          n_of_analysts)),
                                  columns=["Company",
                                           "Recommendations",
                                           "Price",
                                           "Price Mean Target",
                                           "Price Min. Target",
                                           "Price To Target Difference",
-                                          "Projected Returns"])
+                                          "Projected Minimum Returns",
+                                          "Projected Mean Returns",
+                                          "Number of Analysts"])
         dataframe = dataframe.set_index("Company")
         dataframe.to_csv(f"{name}_{today().strftime('%Y%m%d')}.csv")
         print(dataframe)
