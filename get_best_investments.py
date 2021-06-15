@@ -7,7 +7,7 @@ from yahoo_fin import stock_info as si
 
 invested_in = {"invested": ["ADMA", "BTAI", "IMUX", "IMVT", "OPTN", "PRQR", "SIOX", "VKTX"]}
 indexes = {"nasdaq": si.tickers_nasdaq()}
-for name, index in invested_in.items():
+for name, index in indexes.items():
     tickers = index
     recommendations = []
     final_tickers = []
